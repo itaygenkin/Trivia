@@ -93,7 +93,7 @@ def login(conn):
 		data = [username, password]
 		build_and_send_message(conn, chatlib.PROTOCOL_CLIENT["login_msg"], '#'.join(data))
 		r = recv_message_and_parse(conn)
-		print(r)
+		# print(r)
 		if r[0] is None or r[0] == "ERROR":
 			print("Login failed")
 		else:
@@ -111,14 +111,16 @@ def main():
 	# Implement code
 	my_sock = connect()
 	login(my_sock)
-	command = input("1 - Get question\n2 - Get my score\n3 - Get high score\n4 - Get logged in users\n5 - Log out")
+	command = input("1 - Get question\n2 - Get my score\n3 - Get high score\n4 - Log out")
 	while True:
 		cmd = chatlib.SEMI_PROTOCOL_CLIENT[command]
 		(cmd, data) = build_send_recv_parse(my_sock, cmd)
-		if command == '5':
+		print(data)
+		if command == '4':
 			break
 		command = input("1 - next question\n2 - my score\n3 - highscore\n4 - Get logged in users\n5 - Log out")
 	logout(my_sock)
+	print("Logout success")
 	pass
 
 

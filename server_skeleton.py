@@ -4,11 +4,13 @@
 import select
 import socket
 import chatlib
+import random
 
 # GLOBALS
-users = {"itay": "a123"}
+users = {"itay": {"password": "a123", "score": 0, "questions_asked": []}}
 questions = {}
 logged_users = {}  # a dictionary of client hostnames to usernames - will be used later
+client_sockets = []
 
 ERROR_MSG = "Error! "
 SERVER_PORT = 5678
@@ -26,7 +28,6 @@ def build_and_send_message(conn, code, data):
 	"""
 	msg = chatlib.build_message(code, data)
 	conn.send(msg.encode())
-
 	print("[SERVER] ", msg)	  # Debug print
 
 
@@ -53,8 +54,8 @@ def load_questions():
 	Returns: questions dictionary
 	"""
 	questions = {
-				2313 : {"question":"How much is 2+2","answers":["3","4","2","1"],"correct":2},
-				4122 : {"question":"What is the capital of France?","answers":["Lion","Marseille","Paris","Montpellier"],"correct":3}
+				2313: {"question": "How much is 2+2", "answers": ["1", "2", "3", "4"], "correct": 1},
+				4122: {"question": "What is the capital of France?", "answers": ["Lion", "Marseille", "Paris", "Montpelier"], "correct":3}
 				}
 
 	return questions
@@ -112,10 +113,13 @@ def handle_logout_message(conn):
 	Receives: socket
 	Returns: None
 	"""
-	global logged_users
-	cmd, data = recv_message_and_parse(conn)
-	user = chatlib.split_data(data, 0)
-	logged_users.pop(user)
+	global logged_users, client_sockets
+	# cmd, data = recv_message_and_parse(conn)
+	# user = chatlib.split_data(data, 0)
+	logged_users.pop(conn.__str__())
+	build_and_send_message(conn, chatlib.PROTOCOL_CLIENT["logout_msg"], "LOGOUT")
+	client_sockets.remove(conn)
+	conn.close()
 
 
 def handle_login_message(conn, data):
@@ -130,9 +134,9 @@ def handle_login_message(conn, data):
 	# Implement code ...
 	try:
 		[user, password] = chatlib.split_data(data, 1)
-		if user in users.keys() and users[user] == password:
+		if user in users.keys() and (users[user])["password"] == password:
 			build_and_send_message(conn, chatlib.PROTOCOL_SERVER["login_ok_msg"], "")
-			logged_users[user] = conn.__str__()
+			logged_users[conn.__str__()] = user
 			return True
 		else:
 			send_error(conn, "Incorrect username or password")
@@ -140,6 +144,11 @@ def handle_login_message(conn, data):
 	except AttributeError as e:
 		send_error(conn, "Incorrect username or password")
 		return False
+
+
+def get_question():
+	rand = random.randint(0, len(questions)-1)
+	return (questions.keys())[rand]
 
 
 def handle_client_message(conn, cmd, data):
@@ -153,6 +162,15 @@ def handle_client_message(conn, cmd, data):
 	match cmd:
 		case "LOGIN":
 			return handle_login_message(conn, data)
+		# case "GET_QUESTION":
+		# 	question = get_question()
+		# case "MY_SCORE":
+		#
+		# case "HIGHSCORE":
+		#
+		case "LOGOUT":
+			handle_logout_message(conn)
+			return True
 		case _:
 			send_error(conn, "Error")
 			return False
@@ -160,22 +178,30 @@ def handle_client_message(conn, cmd, data):
 
 def main():
 	# Initializes global users and questions dictionaries using load functions, will be used later
-	global users
-	global questions
+	global users, questions, client_sockets
 	
 	print("Welcome to Trivia Server!")
 	# Implement code ...
 	server_socket = setup_socket()
-	client_sockets = []
+	# client_sockets = []
 	while True:
-		# ready_to_read, ready_to_write, in_error = select.select([server_socket] + client_sockets, client_sockets, [])
-		(client_socket, client_address) = server_socket.accept()
-		print("Client connected")
-		cmd, data = recv_message_and_parse(client_socket)
-		while not handle_client_message(client_socket, cmd, data):
-			cmd, data = recv_message_and_parse(client_socket)
-		if client_socket.__str__() not in logged_users.values():
-			handle_client_message(client_socket, cmd, data)
+		ready_to_read, ready_to_write, in_error = select.select([server_socket] + client_sockets, client_sockets, [])
+		for curr_sock in ready_to_read:
+			if curr_sock is server_socket:  # first time connecting
+				(client_socket, client_address) = curr_sock.accept()
+				print("Client connected!", client_address)
+				client_sockets.append(client_socket)
+				cmd, data = recv_message_and_parse(client_socket)
+				while not handle_client_message(client_socket, cmd, data):
+					cmd, data = recv_message_and_parse(client_socket)
+			else:
+				# (client_socket, client_address) = server_socket.accept()
+				cmd, data = recv_message_and_parse(curr_sock)
+				while not handle_client_message(curr_sock, cmd, data):
+					cmd, data = recv_message_and_parse(curr_sock)
+
+		# if client_socket.__str__() not in logged_users.keys():
+		# 	handle_client_message(client_socket, cmd, data)
 
 
 if __name__ == '__main__':
