@@ -3,6 +3,8 @@
 ##############################################################################
 import select
 import socket
+from operator import itemgetter
+
 import chatlib
 import random
 
@@ -68,9 +70,9 @@ def load_user_database():
 	Returns: user dictionary
 	"""
 	users = {
-			"test"		:	{"password":"test","score":0,"questions_asked":[]},
-			"yossi"		:	{"password":"123","score":50,"questions_asked":[]},
-			"master"	:	{"password":"master","score":200,"questions_asked":[]}
+			"test"		:	{"password": "test", "score": 0, "questions_asked": []},
+			"yossi"		:	{"password": "123", "score": 50, "questions_asked": []},
+			"master"	:	{"password": "master", "score": 200, "questions_asked": []}
 			}
 	return users
 
@@ -105,6 +107,16 @@ def send_error(conn, error_msg):
 def handle_getscore_message(conn, username):
 	global users
 	# Implement this in later chapters
+	score = (users[username])["score"]
+	build_and_send_message(conn, chatlib.PROTOCOL_SERVER["score"], str(score))
+
+
+def handle_highscore_message(conn):
+	global users
+	all_score = [[user, users[user]["score"]] for user in users]
+	all_score.sort(key=itemgetter(1), reverse=True)
+	data = ["".join(x) for x in all_score]
+	build_and_send_message(conn, chatlib.PROTOCOL_SERVER["all_score"], "\n".join(data))
 
 	
 def handle_logout_message(conn):
@@ -146,9 +158,9 @@ def handle_login_message(conn, data):
 		return False
 
 
-def get_question():
-	rand = random.randint(0, len(questions)-1)
-	return (questions.keys())[rand]
+def handle_logged_message(conn):
+	global logged_users
+	build_and_send_message(conn,chatlib.PROTOCOL_SERVER["logged_msg"] , ','.join(logged_users.values()))
 
 
 def handle_client_message(conn, cmd, data):
@@ -159,21 +171,24 @@ def handle_client_message(conn, cmd, data):
 	"""
 	global logged_users	 # To be used later
 	# Implement code ...
-	match cmd:
-		case "LOGIN":
+	if conn.__str__() not in logged_users.keys():
+		if cmd == "LOGIN":
 			return handle_login_message(conn, data)
-		# case "GET_QUESTION":
-		# 	question = get_question()
-		# case "MY_SCORE":
-		#
-		# case "HIGHSCORE":
-		#
-		case "LOGOUT":
-			handle_logout_message(conn)
-			return True
-		case _:
-			send_error(conn, "Error")
-			return False
+	elif cmd == "LOGOUT":
+		handle_logout_message(conn)
+		return True
+	elif cmd == "MY_SCORE":
+		handle_getscore_message(conn, logged_users[conn.__str__()])
+		return True
+	elif cmd == "HIGHSCORE":
+		handle_highscore_message(conn)
+		return True
+	elif cmd == "LOGGED":
+		handle_logged_message(conn)
+		return True
+	else:
+		send_error(conn, "Error")
+		return False
 
 
 def main():
@@ -197,8 +212,9 @@ def main():
 			else:
 				# (client_socket, client_address) = server_socket.accept()
 				cmd, data = recv_message_and_parse(curr_sock)
-				while not handle_client_message(curr_sock, cmd, data):
-					cmd, data = recv_message_and_parse(curr_sock)
+				handle_client_message(curr_sock, cmd, data)
+				# while not handle_client_message(curr_sock, cmd, data):
+				# 	cmd, data = recv_message_and_parse(curr_sock)
 
 		# if client_socket.__str__() not in logged_users.keys():
 		# 	handle_client_message(client_socket, cmd, data)

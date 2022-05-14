@@ -26,13 +26,21 @@ SEMI_PROTOCOL_CLIENT = {
 	'1': "GET_QUESTION",
 	'2': "MY_SCORE",
 	'3': "HIGHSCORE",
-	'4': "LOGOUT"
+	'4': "LOOGED",
+	'5': "LOGOUT"
 }
 
-
 PROTOCOL_SERVER = {
-"login_ok_msg" : "LOGIN_OK",
-"login_failed_msg" : "ERROR"
+	"login_ok_msg": "LOGIN_OK",
+	"login_failed_msg": "ERROR",
+	"logged_msg": "LOGGED_ANSWER",
+	"question": "YOUR_QUESTION",
+	"correct": "CORRECT_ANSWER",
+	"wrong": "WRONG_ANSWER",
+	"score": "YOUR_SCORE",
+	"all_score": "ALL_SCORE",
+	"error": "ERROR",
+	"no_ques": "NO_QUESTION"
 }  # ..  Add more commands if needed
 
 

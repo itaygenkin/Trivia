@@ -111,12 +111,19 @@ def main():
 	# Implement code
 	my_sock = connect()
 	login(my_sock)
-	command = input("1 - Get question\n2 - Get my score\n3 - Get high score\n4 - Log out")
+	command = input("1 - Get question\n2 - Get my score\n3 - Get high score\n4 - get logged in\n5 - Log out")
 	while True:
 		cmd = chatlib.SEMI_PROTOCOL_CLIENT[command]
 		(cmd, data) = build_send_recv_parse(my_sock, cmd)
-		print(data)
-		if command == '4':
+		if command == '1':
+			play_question(my_sock)
+		elif command == '2':
+			print(get_score(my_sock))
+		elif command == '3':
+			get_highscore(my_sock)
+		elif command == '4':
+			get_logged_user(my_sock)
+		elif command == '5':
 			break
 		command = input("1 - next question\n2 - my score\n3 - highscore\n4 - Get logged in users\n5 - Log out")
 	logout(my_sock)
