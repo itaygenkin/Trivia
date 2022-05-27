@@ -56,7 +56,8 @@ def play_question(conn):
 		print("ERROR")
 		return
 	else:
-		print(data)
+		data = chatlib.split_data(data, 4)
+		print('\n'.join(data))
 	ans = input("Answer: ")
 	(cmd, data) = build_send_recv_parse(conn, chatlib.PROTOCOL_CLIENT["send_ans"], ans)
 	if cmd is None:

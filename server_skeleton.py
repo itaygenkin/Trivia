@@ -12,7 +12,11 @@ import random
 # GLOBALS
 users = {"itay": {"password": "a123", "score": 0, "questions_asked": []},
 		 "oscar": {"password": "oscar", "score": 1000, "questions_asked": []}}
-questions = {}
+questions = {
+	2313: {"question": "How much is 2+2", "answers": ["1", "2", "3", "4"], "correct": 1},
+	4122: {"question": "What is the capital of France?", "answers": ["Lion", "Marseille", "Paris", "Montpelier"],
+		   "correct": 3}
+}
 logged_users = {}  # a dictionary of client hostnames to usernames - will be used later
 client_sockets = []
 
@@ -173,6 +177,27 @@ def handle_logged_message(conn):
 	build_and_send_message(conn, chatlib.PROTOCOL_SERVER["logged_msg"], ','.join(logged_users.values()))
 
 
+def create_random_question():
+	global questions
+	question_data = random.choice(list(questions.items()))
+	question_number = question_data[0]
+	question = (question_data[1])['question']
+	answer = '#'.join((question_data[1])['answers'])
+	return question_number, question + '#' + answer
+
+
+def handle_question_message(conn):
+	global users, logged_users
+	q_number, question = create_random_question()
+	user = logged_users[conn.__str__()]
+	users[user]['questions_asked'].append(q_number)
+	build_and_send_message(conn, chatlib.PROTOCOL_SERVER['question'], question)
+
+
+def handle_answer_message(conn, user, ans):
+	pass
+
+
 def handle_client_message(conn, cmd, data):
 	"""
 	Gets message code and data and calls the right function to handle command
@@ -186,6 +211,12 @@ def handle_client_message(conn, cmd, data):
 			return handle_login_message(conn, data)
 	elif cmd == "LOGOUT":
 		handle_logout_message(conn)
+		return True
+	elif cmd == "GET_QUESTION":
+		handle_question_message(conn)
+		return True
+	elif cmd == "SEND_ANSWER":
+		handle_answer_message(conn, logged_users[conn.__str__()], data)
 		return True
 	elif cmd == "MY_SCORE":
 		handle_getscore_message(conn, logged_users[conn.__str__()])
