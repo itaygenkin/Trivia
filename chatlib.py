@@ -26,7 +26,7 @@ SEMI_PROTOCOL_CLIENT = {
 	'1': "GET_QUESTION",
 	'2': "MY_SCORE",
 	'3': "HIGHSCORE",
-	'4': "LOOGED",
+	'4': "LOGGED",
 	'5': "LOGOUT"
 }
 

@@ -1,4 +1,6 @@
 import socket
+import time
+
 import chatlib  # To use chatlib functions or consts, use chatlib.****
 
 SERVER_IP = "127.0.0.1"  # Our server will run on same computer as client
@@ -42,7 +44,9 @@ def get_score(conn):
 
 
 def get_highscore(conn):
-	(cmd, data) = build_send_recv_parse(conn, chatlib.PROTOCOL_CLIENT["highscore"], "")
+	(cmd, data) = build_send_recv_parse(conn, chatlib.PROTOCOL_CLIENT["high"], "")
+	print(data)
+	time.sleep(2.5)
 	return data
 
 
@@ -63,7 +67,7 @@ def play_question(conn):
 
 
 def get_logged_user(conn):
-	(cmd, data) = build_send_recv_parse(conn, chatlib.PROTOCOL_CLIENT["logged_msg"], "")
+	(cmd, data) = build_send_recv_parse(conn, chatlib.PROTOCOL_CLIENT["logged_msg"])
 	if cmd is None:
 		print("ERROR")
 	else:
@@ -111,7 +115,7 @@ def main():
 	# Implement code
 	my_sock = connect()
 	login(my_sock)
-	command = input("1 - Get question\n2 - Get my score\n3 - Get high score\n4 - get logged in\n5 - Log out")
+	command = input("1 - Get question\n2 - Get score\n3 - Get high score\n4 - get logged in\n5 - Log out\n")
 	while True:
 		cmd = chatlib.SEMI_PROTOCOL_CLIENT[command]
 		(cmd, data) = build_send_recv_parse(my_sock, cmd)

@@ -3,13 +3,15 @@
 ##############################################################################
 import select
 import socket
+import time
 from operator import itemgetter
 
 import chatlib
 import random
 
 # GLOBALS
-users = {"itay": {"password": "a123", "score": 0, "questions_asked": []}}
+users = {"itay": {"password": "a123", "score": 0, "questions_asked": []},
+		 "oscar": {"password": "oscar", "score": 1000, "questions_asked": []}}
 questions = {}
 logged_users = {}  # a dictionary of client hostnames to usernames - will be used later
 client_sockets = []
@@ -30,7 +32,7 @@ def build_and_send_message(conn, code, data):
 	"""
 	msg = chatlib.build_message(code, data)
 	conn.send(msg.encode())
-	print("[SERVER] ", msg)	  # Debug print
+	print("[SERVER] ", msg)  # Debug print
 
 
 def recv_message_and_parse(conn):
@@ -43,7 +45,7 @@ def recv_message_and_parse(conn):
 	"""
 	full_msg = conn.recv(1024).decode()
 	cmd, data = chatlib.parse_message(full_msg)
-	print("[CLIENT] ", full_msg)	  # Debug print
+	print("[CLIENT] ", full_msg)  # Debug print
 	return cmd, data
 
 
@@ -56,9 +58,10 @@ def load_questions():
 	Returns: questions dictionary
 	"""
 	questions = {
-				2313: {"question": "How much is 2+2", "answers": ["1", "2", "3", "4"], "correct": 1},
-				4122: {"question": "What is the capital of France?", "answers": ["Lion", "Marseille", "Paris", "Montpelier"], "correct":3}
-				}
+		2313: {"question": "How much is 2+2", "answers": ["1", "2", "3", "4"], "correct": 1},
+		4122: {"question": "What is the capital of France?", "answers": ["Lion", "Marseille", "Paris", "Montpelier"],
+			   "correct": 3}
+	}
 
 	return questions
 
@@ -70,13 +73,13 @@ def load_user_database():
 	Returns: user dictionary
 	"""
 	users = {
-			"test"		:	{"password": "test", "score": 0, "questions_asked": []},
-			"yossi"		:	{"password": "123", "score": 50, "questions_asked": []},
+		"test": {"password": "test", "score": 0, "questions_asked": []},
+		"yossi"	:	{"password": "123", "score": 50, "questions_asked": []},
 			"master"	:	{"password": "master", "score": 200, "questions_asked": []}
 			}
 	return users
 
-	
+
 # SOCKET CREATOR
 
 def setup_socket():
@@ -91,7 +94,7 @@ def setup_socket():
 	print("Server is up and listening for users...")
 	return sock
 
-		
+
 def send_error(conn, error_msg):
 	"""
 	Send error message with given message
@@ -100,7 +103,7 @@ def send_error(conn, error_msg):
 	"""
 	build_and_send_message(conn, "ERROR", error_msg)
 
-	
+
 ##### MESSAGE HANDLING
 
 
@@ -115,10 +118,17 @@ def handle_highscore_message(conn):
 	global users
 	all_score = [[user, users[user]["score"]] for user in users]
 	all_score.sort(key=itemgetter(1), reverse=True)
-	data = ["".join(x) for x in all_score]
+	data = [join_list_to_str(x) for x in all_score]
 	build_and_send_message(conn, chatlib.PROTOCOL_SERVER["all_score"], "\n".join(data))
 
-	
+
+def join_list_to_str(my_list):
+	output = ""
+	for x in my_list:
+		output = output + str(x) + ": "
+	return output[:-2]
+
+
 def handle_logout_message(conn):
 	"""
 	Closes the given socket (in laster chapters, also remove user from logged_users dictionary)
@@ -160,7 +170,7 @@ def handle_login_message(conn, data):
 
 def handle_logged_message(conn):
 	global logged_users
-	build_and_send_message(conn,chatlib.PROTOCOL_SERVER["logged_msg"] , ','.join(logged_users.values()))
+	build_and_send_message(conn, chatlib.PROTOCOL_SERVER["logged_msg"], ','.join(logged_users.values()))
 
 
 def handle_client_message(conn, cmd, data):
@@ -169,7 +179,7 @@ def handle_client_message(conn, cmd, data):
 	Receives: socket, message code and data
 	Returns: None
 	"""
-	global logged_users	 # To be used later
+	global logged_users  # To be used later
 	# Implement code ...
 	if conn.__str__() not in logged_users.keys():
 		if cmd == "LOGIN":
@@ -194,7 +204,7 @@ def handle_client_message(conn, cmd, data):
 def main():
 	# Initializes global users and questions dictionaries using load functions, will be used later
 	global users, questions, client_sockets
-	
+
 	print("Welcome to Trivia Server!")
 	# Implement code ...
 	server_socket = setup_socket()
@@ -202,7 +212,9 @@ def main():
 	while True:
 		ready_to_read, ready_to_write, in_error = select.select([server_socket] + client_sockets, client_sockets, [])
 		for curr_sock in ready_to_read:
-			if curr_sock is server_socket:  # first time connecting
+
+			# first time connecting
+			if curr_sock is server_socket:
 				(client_socket, client_address) = curr_sock.accept()
 				print("Client connected!", client_address)
 				client_sockets.append(client_socket)
@@ -211,15 +223,20 @@ def main():
 					cmd, data = recv_message_and_parse(client_socket)
 			else:
 				# (client_socket, client_address) = server_socket.accept()
-				cmd, data = recv_message_and_parse(curr_sock)
-				handle_client_message(curr_sock, cmd, data)
-				# while not handle_client_message(curr_sock, cmd, data):
-				# 	cmd, data = recv_message_and_parse(curr_sock)
+				try:
+					cmd, data = recv_message_and_parse(curr_sock)
+					handle_client_message(curr_sock, cmd, data)
+				except ConnectionAbortedError as car:
+					print(logged_users[curr_sock.__str__()], "suddenly left the game")
+					logged_users.pop(curr_sock.__str__())
+					client_sockets.remove(curr_sock)
 
-		# if client_socket.__str__() not in logged_users.keys():
-		# 	handle_client_message(client_socket, cmd, data)
+			# while not handle_client_message(curr_sock, cmd, data):
+			# 	cmd, data = recv_message_and_parse(curr_sock)
+
+	# if client_socket.__str__() not in logged_users.keys():
+	# 	handle_client_message(client_socket, cmd, data)
 
 
 if __name__ == '__main__':
 	main()
-
