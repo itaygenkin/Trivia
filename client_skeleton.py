@@ -56,13 +56,23 @@ def play_question(conn):
 		print("ERROR")
 		return
 	else:
-		data = chatlib.split_data(data, 4)
-		print('\n'.join(data))
+		question_data = chatlib.split_data(data, 5)
+		question_number = question_data[0]
+		question_data.remove(question_number)
+		question_data = [f'\n{x} - {question_data[x]}'for x in range(len(question_data))]
+		print(''.join(question_data)[5:])
 	ans = input("Answer: ")
-	(cmd, data) = build_send_recv_parse(conn, chatlib.PROTOCOL_CLIENT["send_ans"], ans)
+
+	# check validity of the answer
+	while ans not in ['1', '2', '3', '4']:
+		print("Invalid answer")
+		ans = input("Answer: ")
+	(cmd, data) = build_send_recv_parse(conn, chatlib.PROTOCOL_CLIENT["send_ans"], question_number + '#' + ans)
 	if cmd is None:
 		print("ERROR")
 		return
+	elif cmd == "CORRECT_ANSWER":
+		print("Correct Answer")
 	else:
 		print(data)
 
@@ -118,6 +128,9 @@ def main():
 	login(my_sock)
 	command = input("1 - Get question\n2 - Get score\n3 - Get high score\n4 - get logged in\n5 - Log out\n")
 	while True:
+		while command not in ['1', '2', '3', '4', '5']:
+			print("Invalid choice")
+			command = input("1 - Get question\n2 - Get score\n3 - Get high score\n4 - get logged in\n5 - Log out\n")
 		cmd = chatlib.SEMI_PROTOCOL_CLIENT[command]
 		(cmd, data) = build_send_recv_parse(my_sock, cmd)
 		if command == '1':
@@ -130,7 +143,7 @@ def main():
 			get_logged_user(my_sock)
 		elif command == '5':
 			break
-		command = input("1 - next question\n2 - my score\n3 - highscore\n4 - Get logged in users\n5 - Log out")
+		command = input("1 - next question\n2 - my score\n3 - highscore\n4 - Get logged in users\n5 - Log out\n")
 	logout(my_sock)
 	print("Logout success")
 	pass

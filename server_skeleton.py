@@ -13,7 +13,7 @@ import random
 users = {"itay": {"password": "a123", "score": 0, "questions_asked": []},
 		 "oscar": {"password": "oscar", "score": 1000, "questions_asked": []}}
 questions = {
-	2313: {"question": "How much is 2+2", "answers": ["1", "2", "3", "4"], "correct": 1},
+	2313: {"question": "How much is 2+2", "answers": ["1", "2", "3", "4"], "correct": 4},
 	4122: {"question": "What is the capital of France?", "answers": ["Lion", "Marseille", "Paris", "Montpelier"],
 		   "correct": 3}
 }
@@ -27,7 +27,7 @@ SERVER_IP = "127.0.0.1"
 
 # HELPER SOCKET METHODS
 
-def build_and_send_message(conn, code, data):
+def build_and_send_message(conn, code, data=""):
 	"""
 	Builds a new message using chatlib, wanted code and message.
 	Prints debug info, then sends it to the given socket.
@@ -78,9 +78,9 @@ def load_user_database():
 	"""
 	users = {
 		"test": {"password": "test", "score": 0, "questions_asked": []},
-		"yossi"	:	{"password": "123", "score": 50, "questions_asked": []},
-			"master"	:	{"password": "master", "score": 200, "questions_asked": []}
-			}
+		"yossi": {"password": "123", "score": 50, "questions_asked": []},
+		"master": {"password": "master", "score": 200, "questions_asked": []}
+	}
 	return users
 
 
@@ -140,8 +140,6 @@ def handle_logout_message(conn):
 	Returns: None
 	"""
 	global logged_users, client_sockets
-	# cmd, data = recv_message_and_parse(conn)
-	# user = chatlib.split_data(data, 0)
 	logged_users.pop(conn.__str__())
 	build_and_send_message(conn, chatlib.PROTOCOL_CLIENT["logout_msg"], "LOGOUT")
 	client_sockets.remove(conn)
@@ -156,11 +154,14 @@ def handle_login_message(conn, data):
 	Returns: None (sends answer to client)
 	"""
 	global users  # This is needed to access the same users dictionary from all functions
-	global logged_users	 # To be used later
+	global logged_users  # To be used later
 	# Implement code ...
 	try:
 		[user, password] = chatlib.split_data(data, 1)
-		if user in users.keys() and (users[user])["password"] == password:
+		if user in logged_users.values():
+			send_error(conn, 'user is already logged in')
+			return False
+		elif user in users.keys() and (users[user])["password"] == password:
 			build_and_send_message(conn, chatlib.PROTOCOL_SERVER["login_ok_msg"], "")
 			logged_users[conn.__str__()] = user
 			return True
@@ -183,7 +184,7 @@ def create_random_question():
 	question_number = question_data[0]
 	question = (question_data[1])['question']
 	answer = '#'.join((question_data[1])['answers'])
-	return question_number, question + '#' + answer
+	return question_number, str(question_number) + '#' + question + '#' + answer
 
 
 def handle_question_message(conn):
@@ -195,7 +196,14 @@ def handle_question_message(conn):
 
 
 def handle_answer_message(conn, user, ans):
-	pass
+	global users, questions
+	ans_list = chatlib.split_data(ans, 1)
+	correct_answer = questions[int(ans_list[0])]['correct']
+	if correct_answer == int(ans_list[1]):
+		users[user]['score'] += 5
+		build_and_send_message(conn, chatlib.PROTOCOL_SERVER['correct'], )
+	else:
+		build_and_send_message(conn, chatlib.PROTOCOL_SERVER['wrong'])
 
 
 def handle_client_message(conn, cmd, data):
@@ -239,7 +247,7 @@ def main():
 	print("Welcome to Trivia Server!")
 	# Implement code ...
 	server_socket = setup_socket()
-	# client_sockets = []
+
 	while True:
 		ready_to_read, ready_to_write, in_error = select.select([server_socket] + client_sockets, client_sockets, [])
 		for curr_sock in ready_to_read:
@@ -257,16 +265,11 @@ def main():
 				try:
 					cmd, data = recv_message_and_parse(curr_sock)
 					handle_client_message(curr_sock, cmd, data)
-				except ConnectionAbortedError as car:
+				except:
 					print(logged_users[curr_sock.__str__()], "suddenly left the game")
+					handle_logout_message(curr_sock)
 					logged_users.pop(curr_sock.__str__())
 					client_sockets.remove(curr_sock)
-
-			# while not handle_client_message(curr_sock, cmd, data):
-			# 	cmd, data = recv_message_and_parse(curr_sock)
-
-	# if client_socket.__str__() not in logged_users.keys():
-	# 	handle_client_message(client_socket, cmd, data)
 
 
 if __name__ == '__main__':
