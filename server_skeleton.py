@@ -178,10 +178,18 @@ def handle_logged_message(conn):
 	build_and_send_message(conn, chatlib.PROTOCOL_SERVER["logged_msg"], ','.join(logged_users.values()))
 
 
-def create_random_question():
-	global questions
+def create_random_question(user):
+	global questions, users
+	if len(user[user]['questions_asked']) == len(questions):
+		return None, None
 	question_data = random.choice(list(questions.items()))
 	question_number = question_data[0]
+
+	# check whether the user were asked this question
+	while question_number in users[user][question_number]:
+		question_data = random.choice(list(questions.items()))
+		question_number = question_data[0]
+
 	question = (question_data[1])['question']
 	answer = '#'.join((question_data[1])['answers'])
 	return question_number, str(question_number) + '#' + question + '#' + answer
@@ -189,8 +197,10 @@ def create_random_question():
 
 def handle_question_message(conn):
 	global users, logged_users
-	q_number, question = create_random_question()
 	user = logged_users[conn.__str__()]
+	q_number, question = create_random_question(user)
+	if q_number is None:
+		send_error(conn, "No more questions")
 	users[user]['questions_asked'].append(q_number)
 	build_and_send_message(conn, chatlib.PROTOCOL_SERVER['question'], question)
 
