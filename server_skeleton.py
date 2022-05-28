@@ -201,6 +201,7 @@ def handle_question_message(conn):
 	q_number, question = create_random_question(user)
 	if q_number is None:
 		send_error(conn, "No more questions")
+		return
 	users[user]['questions_asked'].append(q_number)
 	build_and_send_message(conn, chatlib.PROTOCOL_SERVER['question'], question)
 
