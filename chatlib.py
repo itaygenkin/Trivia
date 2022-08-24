@@ -21,7 +21,7 @@ PROTOCOL_CLIENT = {
 	"send_ans": "SEND_ANSWER",
 	"score": "MY_SCORE",
 	"high": "HIGHSCORE"
-}  # .. Add more commands if needed
+}  # ... Add more commands if needed
 
 SEMI_PROTOCOL_CLIENT = {
 	'1': "GET_QUESTION",
@@ -75,7 +75,7 @@ def parse_message(data):
 		lst = data.split('|')
 		if len(lst) != 3:
 			raise IndexError
-	except IndexError as e:
+	except IndexError:
 		return None, None
 	cmd = lst[0].strip()
 	num = lst[1]
@@ -121,7 +121,7 @@ def split_data(msg, expected_fields):
 
 def join_data(msg_fields):
 	"""
-	Helper method. Gets a list, joins all of it's fields to one string divided by the data delimiter.
+	Helper method. Gets a list, joins all of its fields to one string divided by the data delimiter.
 	Returns: string that looks like cell1#cell2#cell3
 	"""
 	msg = ""
