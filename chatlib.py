@@ -1,5 +1,6 @@
 # Protocol Constants
 import string
+import random
 
 CMD_FIELD_LENGTH = 16  # Exact length of cmd field (in bytes)
 LENGTH_FIELD_LENGTH = 4   # Exact length of length field (in bytes)
@@ -127,3 +128,11 @@ def join_data(msg_fields):
 	for x in msg_fields:
 		msg += str(x) + '#'
 	return msg[:-1]
+
+
+def generate_question_number():
+	numbers = list(range(1, 10000))
+	while True:
+		next = random.choice(numbers)
+		yield next
+		numbers.remove(next)

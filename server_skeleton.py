@@ -3,10 +3,8 @@
 ##############################################################################
 import select
 import socket
-import time
 from operator import itemgetter
 import requests
-import json
 
 import chatlib
 import random
@@ -15,8 +13,8 @@ import random
 users = {"itay": {"password": "a123", "score": 0, "questions_asked": []},
 		 "oscar": {"password": "oscar", "score": 1000, "questions_asked": []}}
 questions = {
-	2313: {"question": "How much is 2+2", "answers": ["1", "2", "3", "4"], "correct": 4},
-	4122: {"question": "What is the capital of France?", "answers": ["Lion", "Marseille", "Paris", "Montpelier"],
+	chatlib.generate_question_number().__next__(): {"question": "How much is 2+2", "answers": ["1", "2", "3", "4"], "correct": 4},
+	chatlib.generate_question_number().__next__(): {"question": "What is the capital of France?", "answers": ["Lion", "Marseille", "Paris", "Montpelier"],
 		   "correct": 3}
 }
 logged_users = {}  # a dictionary of client hostnames to usernames - will be used later
@@ -57,26 +55,13 @@ def recv_message_and_parse(conn):
 
 # Data Loaders #
 
-def load_questions():
+def load_questions():  # TODO: implement
 	"""
 	Loads questions bank from file	## FILE SUPPORT TO BE ADDED LATER
 	Recieves: -
 	Returns: questions dictionary
 	"""
-	questions = {
-		generate_question_number().__next__(): {"question": "How much is 2+2", "answers": ["1", "2", "3", "4"], "correct": 1},
-		generate_question_number().__next__(): {"question": "What is the capital of France?", "answers": ["Lion", "Marseille", "Paris", "Montpelier"],
-			   "correct": 3}
-	}
-	return questions
-
-
-def generate_question_number():
-	numbers = list(range(1, 10000))
-	while True:
-		next = random.choice(numbers)
-		yield next
-		numbers.remove(next)
+	return {}
 
 
 def gather_answers(correct_answer, incorrect_answers, correct_question_index):
@@ -99,10 +84,10 @@ def load_questions_from_web():
 		incorrect_answers = q['incorrect_answers']
 		rand = random.randint(1, 4)
 		answers = gather_answers(correct_answer, incorrect_answers, rand)
-		questions[generate_question_number().__next__()] = {"question": question, "answers": answers, "correct": rand}
+		questions[chatlib.generate_question_number().__next__()] = {"question": question, "answers": answers, "correct": rand}
 
 
-def load_user_database():
+def load_user_database():  # TODO: implement
 	"""
 	Loads users list from file	## FILE SUPPORT TO BE ADDED LATER
 	Recieves: -
