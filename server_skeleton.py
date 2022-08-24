@@ -5,6 +5,8 @@ import select
 import socket
 import time
 from operator import itemgetter
+import requests
+import json
 
 import chatlib
 import random
@@ -62,12 +64,42 @@ def load_questions():
 	Returns: questions dictionary
 	"""
 	questions = {
-		2313: {"question": "How much is 2+2", "answers": ["1", "2", "3", "4"], "correct": 1},
-		4122: {"question": "What is the capital of France?", "answers": ["Lion", "Marseille", "Paris", "Montpelier"],
+		generate_question_number().__next__(): {"question": "How much is 2+2", "answers": ["1", "2", "3", "4"], "correct": 1},
+		generate_question_number().__next__(): {"question": "What is the capital of France?", "answers": ["Lion", "Marseille", "Paris", "Montpelier"],
 			   "correct": 3}
 	}
-
 	return questions
+
+
+def generate_question_number():
+	numbers = list(range(1, 10000))
+	while True:
+		next = random.choice(numbers)
+		yield next
+		numbers.remove(next)
+
+
+def gather_answers(correct_answer, incorrect_answers, correct_question_index):
+	answers = []
+	for i in range(1, 5):
+		if i == correct_question_index:
+			answers.append(correct_answer)
+		else:
+			answers.append(incorrect_answers[0])
+			incorrect_answers.pop(0)
+	return answers
+
+def load_questions_from_web():
+	global questions
+	response = requests.get(url="https://opentdb.com/api.php?amount=50&type=multiple")
+	payload = response.json()["results"]
+	for q in payload:
+		question = q['question']
+		correct_answer = q['correct_answer']
+		incorrect_answers = q['incorrect_answers']
+		rand = random.randint(1, 4)
+		answers = gather_answers(correct_answer, incorrect_answers, rand)
+		questions[generate_question_number().__next__()] = {"question": question, "answers": answers, "correct": rand}
 
 
 def load_user_database():
@@ -254,6 +286,7 @@ def handle_client_message(conn, cmd, data):
 def main():
 	# Initializes global users and questions dictionaries using load functions, will be used later
 	global users, questions, client_sockets
+	load_questions_from_web()
 
 	print("Welcome to Trivia Server!")
 	# Implement code ...
