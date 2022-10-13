@@ -21,7 +21,7 @@ PROTOCOL_CLIENT = {
 	"send_ans": "SEND_ANSWER",
 	"score": "MY_SCORE",
 	"high": "HIGHSCORE"
-}  # ... Add more commands if needed
+}
 
 SEMI_PROTOCOL_CLIENT = {
 	'1': "GET_QUESTION",
@@ -42,7 +42,7 @@ PROTOCOL_SERVER = {
 	"all_score": "ALL_SCORE",
 	"error": "ERROR",
 	"no_ques": "NO_QUESTION"
-}  # ..  Add more commands if needed
+}
 
 
 # Other constants

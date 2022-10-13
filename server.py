@@ -55,15 +55,6 @@ def recv_message_and_parse(conn):
 
 # Data Loaders #
 
-def load_questions():  # TODO: implement
-	"""
-	Loads questions bank from file	## FILE SUPPORT TO BE ADDED LATER
-	Recieves: -
-	Returns: questions dictionary
-	"""
-	return {}
-
-
 def gather_answers(correct_answer, incorrect_answers, correct_question_index):
 	answers = []
 	for i in range(1, 5):
@@ -73,6 +64,7 @@ def gather_answers(correct_answer, incorrect_answers, correct_question_index):
 			answers.append(incorrect_answers[0])
 			incorrect_answers.pop(0)
 	return answers
+
 
 def load_questions_from_web():
 	global questions
@@ -274,7 +266,7 @@ def main():
 	load_questions_from_web()
 
 	print("Welcome to Trivia Server!")
-	# Implement code ...
+
 	server_socket = setup_socket()
 
 	while True:
@@ -294,7 +286,7 @@ def main():
 				try:
 					cmd, data = recv_message_and_parse(curr_sock)
 					handle_client_message(curr_sock, cmd, data)
-				except:
+				except Exception as e:
 					print(logged_users[curr_sock.__str__()], "suddenly left the game")
 					handle_logout_message(curr_sock)
 					logged_users.pop(curr_sock.__str__())
