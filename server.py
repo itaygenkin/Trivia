@@ -47,10 +47,14 @@ def recv_message_and_parse(conn):
 	Returns: cmd (str) and data (str) of the received message.
 	If error occurred, will return None, None
 	"""
-	full_msg = conn.recv(1024).decode()
-	cmd, data = chatlib.parse_message(full_msg)
-	print("[CLIENT] ", full_msg)  # Debug print
-	return cmd, data
+	try:
+		full_msg = conn.recv(1024).decode()
+		cmd, data = chatlib.parse_message(full_msg)
+		print("[CLIENT] ", full_msg)  # Debug print
+		return cmd, data
+	except:
+		print('some error')
+		return None, None
 
 
 # Data Loaders #
@@ -164,7 +168,7 @@ def handle_login_message(conn, data):
 	"""
 	global users  # This is needed to access the same users dictionary from all functions
 	global logged_users  # To be used later
-	# Implement code ...
+
 	try:
 		[user, password] = chatlib.split_data(data, 1)
 		if user in logged_users.values():
@@ -189,17 +193,17 @@ def handle_logged_message(conn):
 
 def create_random_question(user):
 	global questions, users
-	if len(user[user]['questions_asked']) == len(questions):
+	if len(users[user]['questions_asked']) == len(questions):
 		return None, None
 	question_data = random.choice(list(questions.items()))
 	question_number = question_data[0]
 
 	# check whether the user were asked this question
-	while question_number in users[user][question_number]:
+	while question_number in users[user]["questions_asked"]:
 		question_data = random.choice(list(questions.items()))
 		question_number = question_data[0]
 
-	question = (question_data[1])['question']
+	question = question_data[1]['question']
 	answer = '#'.join((question_data[1])['answers'])
 	return question_number, str(question_number) + '#' + question + '#' + answer
 
@@ -264,8 +268,10 @@ def main():
 	# Initializes global users and questions dictionaries using load functions, will be used later
 	global users, questions, client_sockets
 	load_questions_from_web()
-
-	print("Welcome to Trivia Server!")
+	print("Welcome to Trivia Server!\n")
+	for x in questions:
+		chatlib.parse_notation(questions[x]['question'])
+		#print(x, chatlib.parse_notation(questions[x]['question']))
 
 	server_socket = setup_socket()
 
