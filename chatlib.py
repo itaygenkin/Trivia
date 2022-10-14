@@ -139,9 +139,7 @@ def generate_question_number():
 
 
 def parse_notation(sentence):
-	print(sentence)
-	sentence.replace('#039;', "\'")
-	sentence.replace('#034;', '\"')
-	sentence.replace('&quot;', '\" ')
-	print(sentence)
+	sentence = sentence.replace('&#039;', "\'")
+	sentence = sentence.replace('&#034;', '\"')
+	sentence = sentence.replace('&quot;', '\"')
 	return sentence

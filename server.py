@@ -75,7 +75,7 @@ def load_questions_from_web():
 	response = requests.get(url="https://opentdb.com/api.php?amount=50&type=multiple")
 	payload = response.json()["results"]
 	for q in payload:
-		question = q['question']
+		question = chatlib.parse_notation(q['question'])
 		correct_answer = q['correct_answer']
 		incorrect_answers = q['incorrect_answers']
 		rand = random.randint(1, 4)
@@ -269,9 +269,6 @@ def main():
 	global users, questions, client_sockets
 	load_questions_from_web()
 	print("Welcome to Trivia Server!\n")
-	for x in questions:
-		chatlib.parse_notation(questions[x]['question'])
-		#print(x, chatlib.parse_notation(questions[x]['question']))
 
 	server_socket = setup_socket()
 
