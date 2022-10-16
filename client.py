@@ -97,10 +97,11 @@ def error_and_exit(error_msg):
 	exit()
 
 
-def login(conn):
+def login(conn, user_mode):
 	"""
 	get username and password from the user and login
 	:param conn: socket
+	:param user_mode: char ('1' or '2')
 	:return: None
 	"""
 	while True:
@@ -123,15 +124,8 @@ def logout(conn):
 	conn.close()
 
 
-def main():
-	my_sock = connect()
-	login(my_sock)
-
+def user_game(my_sock):
 	command = input("1 - Get question\n2 - Get score\n3 - Get high score\n4 - Get logged in\n5 - Log out\n")
-	while command not in ['1', '2', '3', '4', '5']:
-		print("Invalid choice")
-		command = input("1 - Get question\n2 - Get score\n3 - Get high score\n4 - Get logged in\n5 - Log out\n")
-
 	while True:
 		cmd = chatlib.SEMI_PROTOCOL_CLIENT[command]
 		(cmd, data) = build_send_recv_parse(my_sock, cmd)
@@ -154,6 +148,47 @@ def main():
 
 	logout(my_sock)
 	print("Logout success")
+
+
+def add_question(conn):
+	"""
+	add question to database, only creator can add questions
+	:param conn: socket
+	"""
+	question = input('Write a question please\n')
+	answers = input('Write 4 answers options separated by \'$\'\n')
+	correct_answer = input('Write the right answer\n')
+	question_data = question + '%' + answers + '%' + correct_answer
+	(cmd, data) = build_send_recv_parse(conn, chatlib.PROTOCOL_CLIENT["add"], question_data)
+	pass
+
+
+def creator(my_sock):
+	command = input('1 - Add question\n2 - Log out')
+	while True:
+		if command == '1':
+			add_question(my_sock)
+		elif command == '2':
+			break
+
+	logout(my_sock)
+	print("Logout success")
+
+
+def main():
+	my_sock = connect()
+
+	user_mode = input('1 - User\n2 - Manager')
+	while user_mode not in ['1', '2']:
+		user_mode = input('1 - User\n2 - Manager')
+
+	login(my_sock, user_mode)
+
+	if user_mode == '1':
+		user_game(my_sock)
+	else:
+		creator(my_sock)
+
 	pass
 
 

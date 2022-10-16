@@ -231,6 +231,14 @@ def handle_answer_message(conn, user, ans):
 		build_and_send_message(conn, chatlib.PROTOCOL_SERVER['wrong'])
 
 
+def handle_add_question(data):
+	global questions
+	question_data = data.split('%')
+	# answers_list = question_data[1].split('$')
+	question_to_add = {'question': question_data[0], 'answers': question_data[1].split('$'), 'correct': question_data[2]}
+	questions[chatlib.generate_question_number().__next__()] = question_to_add
+
+
 def handle_client_message(conn, cmd, data):
 	"""
 	Gets message code and data and calls the right function to handle command
@@ -259,6 +267,8 @@ def handle_client_message(conn, cmd, data):
 	elif cmd == "LOGGED":
 		handle_logged_message(conn)
 		return True
+	elif cmd == "ADD_QUESTION":
+		handle_add_question(conn, data)
 	else:
 		send_error(conn, "Error")
 		return False

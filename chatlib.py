@@ -20,7 +20,8 @@ PROTOCOL_CLIENT = {
 	"get_ques": "GET_QUESTION",
 	"send_ans": "SEND_ANSWER",
 	"score": "MY_SCORE",
-	"high": "HIGHSCORE"
+	"high": "HIGHSCORE",
+	"add": "ADD_QUESTION"
 }
 
 SEMI_PROTOCOL_CLIENT = {
@@ -53,7 +54,7 @@ ERROR_RETURN = None  # What is returned in case of an error
 def build_message(cmd, data):
 	"""
 	Gets command name (str) and data field (str) and creates a valid protocol message
-	Returns: str, or None if error occured
+	Returns: str, or None if error occurred
 	"""
 	if (cmd not in PROTOCOL_CLIENT.values() and cmd not in PROTOCOL_SERVER.values()) or (len(data) > MAX_DATA_LENGTH):
 		return None
