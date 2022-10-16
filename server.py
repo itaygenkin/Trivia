@@ -11,7 +11,8 @@ import random
 
 # GLOBALS
 users = {"itay": {"password": "a123", "score": 0, "questions_asked": []},
-		 "oscar": {"password": "oscar", "score": 1000, "questions_asked": []}}
+		 "oscar": {"password": "oscar", "score": 1000, "questions_asked": []},
+		 "master": {"password": "master"}}
 questions = {
 	chatlib.generate_question_number().__next__(): {"question": "How much is 2+2", "answers": ["1", "2", "3", "4"], "correct": 4},
 	chatlib.generate_question_number().__next__(): {"question": "What is the capital of France?", "answers": ["Lion", "Marseille", "Paris", "Montpelier"],
@@ -231,12 +232,12 @@ def handle_answer_message(conn, user, ans):
 		build_and_send_message(conn, chatlib.PROTOCOL_SERVER['wrong'])
 
 
-def handle_add_question(data):
+def handle_add_question(conn, data):
 	global questions
-	question_data = data.split('%')
-	# answers_list = question_data[1].split('$')
+	question_data = chatlib.split_data(data, 2)
 	question_to_add = {'question': question_data[0], 'answers': question_data[1].split('$'), 'correct': question_data[2]}
 	questions[chatlib.generate_question_number().__next__()] = question_to_add
+	build_and_send_message(conn, chatlib.PROTOCOL_SERVER["add_succ"])
 
 
 def handle_client_message(conn, cmd, data):
@@ -269,13 +270,13 @@ def handle_client_message(conn, cmd, data):
 		return True
 	elif cmd == "ADD_QUESTION":
 		handle_add_question(conn, data)
+		return True
 	else:
 		send_error(conn, "Error")
 		return False
 
 
 def main():
-	# Initializes global users and questions dictionaries using load functions, will be used later
 	global users, questions, client_sockets
 	load_questions_from_web()
 	print("Welcome to Trivia Server!\n")

@@ -75,7 +75,7 @@ def play_question(conn):
 	elif cmd == "CORRECT_ANSWER":
 		print("Correct Answer")
 	else:
-		print("--> ", data)
+		print("--> ", data)  # TODO: reformat
 
 
 def get_logged_user(conn):
@@ -150,26 +150,30 @@ def user_game(my_sock):
 	print("Logout success")
 
 
-def add_question(conn):
+def add_question(conn):  # TODO: validate input
 	"""
 	add question to database, only creator can add questions
 	:param conn: socket
 	"""
 	question = input('Write a question please\n')
-	answers = input('Write 4 answers options separated by \'$\'\n')
-	correct_answer = input('Write the right answer\n')
-	question_data = question + '%' + answers + '%' + correct_answer
-	(cmd, data) = build_send_recv_parse(conn, chatlib.PROTOCOL_CLIENT["add"], question_data)
-	pass
+	answers = input('Write 4 answers separated by \'$\'\n')
+	correct_answer = input('Write the correct answer\n')
+	question_data = [question, answers, correct_answer]
+	(cmd, data) = build_send_recv_parse(conn, chatlib.PROTOCOL_CLIENT["add"], '#'.join(question_data))
+	if cmd is None or cmd == "ERROR":
+		print("A problem was found while adding question, please try again")
+	elif cmd == "ADD_QUESTION_SUCCESSFULLY":
+		print("Question has successfully added")
 
 
-def creator(my_sock):
-	command = input('1 - Add question\n2 - Log out')
+def creator(my_sock):  # TODO: validate command input
+	command = input('1 - Add question\n2 - Log out\n')
 	while True:
 		if command == '1':
 			add_question(my_sock)
 		elif command == '2':
 			break
+		command = input('1 - Add question\n2 - Log out\n')
 
 	logout(my_sock)
 	print("Logout success")
@@ -178,9 +182,9 @@ def creator(my_sock):
 def main():
 	my_sock = connect()
 
-	user_mode = input('1 - User\n2 - Manager')
+	user_mode = input('1 - User\n2 - Manager\n')
 	while user_mode not in ['1', '2']:
-		user_mode = input('1 - User\n2 - Manager')
+		user_mode = input('1 - User\n2 - Manager\n')
 
 	login(my_sock, user_mode)
 

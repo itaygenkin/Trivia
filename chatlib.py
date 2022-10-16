@@ -42,7 +42,8 @@ PROTOCOL_SERVER = {
 	"score": "YOUR_SCORE",
 	"all_score": "ALL_SCORE",
 	"error": "ERROR",
-	"no_ques": "NO_QUESTION"
+	"no_ques": "NO_QUESTION",
+	"add_succ": "ADD_QUESTION_SUCCESSFULLY"
 }
 
 
