@@ -17,8 +17,8 @@ questions = {
 	chatlib.generate_question_number().__next__(): {"question": "What is the capital of France?", "answers": ["Lion", "Marseille", "Paris", "Montpelier"],
 		   "correct": 3}
 }
-logged_users = {}  # a dictionary of client hostnames to usernames - will be used later
-client_sockets = []
+logged_users = {}  # a dictionary of client hostnames to usernames
+client_sockets = []  # a list of client sockets
 
 ERROR_MSG = "Error! "
 SERVER_PORT = 5678
@@ -166,17 +166,18 @@ def handle_login_message(conn, data):
 	Receives: socket, message code and data
 	Returns: None (sends answer to client)
 	"""
-	global users  # This is needed to access the same users dictionary from all functions
-	global logged_users  # To be used later
+	global users
+	global logged_users
 
 	try:
 		[user, password] = chatlib.split_data(data, 1)
 		if user in logged_users.values():
-			send_error(conn, 'user is already logged in')
+			send_error(conn, f'{user} is already logged in')
+			# send_error(conn, f'{logged_users[conn]} is already logged in')
 			return False
 		elif user in users.keys() and (users[user])["password"] == password:
-			build_and_send_message(conn, chatlib.PROTOCOL_SERVER["login_ok_msg"], "")
 			logged_users[conn.__str__()] = user
+			build_and_send_message(conn, chatlib.PROTOCOL_SERVER["login_ok_msg"], "")
 			return True
 		else:
 			send_error(conn, "Incorrect username or password")
@@ -236,8 +237,7 @@ def handle_client_message(conn, cmd, data):
 	Receives: socket, message code and data
 	Returns: None
 	"""
-	global logged_users  # To be used later
-	# Implement code ...
+	global logged_users
 	if conn.__str__() not in logged_users.keys():
 		if cmd == "LOGIN":
 			return handle_login_message(conn, data)
@@ -292,8 +292,8 @@ def main():
 				except Exception as e:
 					print(logged_users[curr_sock.__str__()], "suddenly left the game")
 					handle_logout_message(curr_sock)
-					logged_users.pop(curr_sock.__str__())
-					client_sockets.remove(curr_sock)
+					# logged_users.pop(curr_sock.__str__())
+					# client_sockets.remove(curr_sock)
 
 
 if __name__ == '__main__':

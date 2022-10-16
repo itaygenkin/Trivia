@@ -111,6 +111,7 @@ def login(conn):
 		r = recv_message_and_parse(conn)
 		if r[0] is None or r[0] == "ERROR":
 			print("Login failed")
+			print(r[1])
 		else:
 			print("Login success")
 			break
