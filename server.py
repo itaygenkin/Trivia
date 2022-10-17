@@ -35,9 +35,15 @@ def build_and_send_message(conn, code, data=""):
 	Parameters: conn (socket object), code (str), data (str)
 	Returns: Nothing
 	"""
+	global logged_users
 	msg = chatlib.build_message(code, data)
-	conn.send(msg.encode())
-	print("[SERVER] ", msg)  # Debug print
+	try:
+		conn.send(msg.encode())
+		print("[SERVER] ", msg)  # Debug print
+	except ConnectionAbortedError as cae:
+		# print(logged_users[conn.__str__()], "suddenly left the game")
+		# handle_logout_message(conn)
+		raise cae
 
 
 def recv_message_and_parse(conn):
@@ -119,7 +125,10 @@ def send_error(conn, error_msg):
 	Receives: socket, message error string from called function
 	Returns: None
 	"""
-	build_and_send_message(conn, "ERROR", error_msg)
+	try:
+		build_and_send_message(conn, "ERROR", error_msg)
+	except ConnectionAbortedError as cae:
+		raise cae
 
 
 ##### MESSAGE HANDLING
@@ -176,11 +185,11 @@ def handle_login_message(conn, data):
 		if user not in users.keys() or users[user]["password"] != password:
 			send_error(conn, "Incorrect username or password")
 			return False
-		elif user_mode and not users[user]["isCreator"]:
-			send_error(conn, f"{user} is not permitted to log in to creator mode")
-			return False
 		elif user in logged_users.values():
 			send_error(conn, f'{user} is already logged in')
+			return False
+		elif user_mode and not users[user]["isCreator"]:
+			send_error(conn, f"{user} is not permitted to log in to creator mode")
 			return False
 		else:
 			logged_users[conn.__str__()] = user
@@ -251,9 +260,10 @@ def handle_client_message(conn, cmd, data):
 	Returns: None
 	"""
 	global logged_users
-	if conn.__str__() not in logged_users.keys():
-		if cmd == "LOGIN":
-			return handle_login_message(conn, data)
+	# if conn.__str__() not in logged_users.keys():
+	if cmd == "LOGIN":
+		return handle_login_message(conn, data)
+
 	match cmd:
 		case "LOGOUT":
 			handle_logout_message(conn)
@@ -277,8 +287,11 @@ def handle_client_message(conn, cmd, data):
 			handle_add_question(conn, data)
 			return True
 		case _:
-			send_error(conn, "Error")
-			return False
+			try:
+				send_error(conn, "Error")
+				return False
+			except ConnectionAbortedError as cae:
+				raise cae
 
 
 def main():
@@ -297,19 +310,27 @@ def main():
 				(client_socket, client_address) = curr_sock.accept()
 				print("Client connected!", client_address)
 				client_sockets.append(client_socket)
-				cmd, data = recv_message_and_parse(client_socket)
-				while not handle_client_message(client_socket, cmd, data):
+				try:
 					cmd, data = recv_message_and_parse(client_socket)
+					while not handle_client_message(client_socket, cmd, data):
+						cmd, data = recv_message_and_parse(client_socket)
+				except Exception as e:
+					print("Unappropriated log out occurred")
+					try:
+						client_sockets.remove(client_socket)
+						client_socket.close()
+					except Exception as e:
+						print(e)
 			else:
 				# (client_socket, client_address) = server_socket.accept()
 				try:
 					cmd, data = recv_message_and_parse(curr_sock)
 					handle_client_message(curr_sock, cmd, data)
-				except Exception as e:
+				except ConnectionAbortedError as cae:
 					print(logged_users[curr_sock.__str__()], "suddenly left the game")
-					handle_logout_message(curr_sock)
-					# logged_users.pop(curr_sock.__str__())
-					# client_sockets.remove(curr_sock)
+					logged_users.pop(curr_sock.__str__())
+					client_sockets.remove(curr_sock)
+					curr_sock.close()
 
 
 if __name__ == '__main__':
