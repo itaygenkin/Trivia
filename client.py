@@ -107,7 +107,7 @@ def login(conn, user_mode):
 	while True:
 		username = input("Please enter username: \n")
 		password = input("Please enter password: \n")
-		data = [username, password]
+		data = [username, password, user_mode]
 		r = build_send_recv_parse(conn, chatlib.PROTOCOL_CLIENT["login_msg"], '#'.join(data))
 		if r[0] is None or r[0] == "ERROR":
 			print("Login failed")
@@ -181,18 +181,16 @@ def creator(my_sock):  # TODO: validate command input
 def main():
 	my_sock = connect()
 
-	user_mode = input('1 - User\n2 - Manager\n')
-	while user_mode not in ['1', '2']:
-		user_mode = input('1 - User\n2 - Manager\n')
+	user_mode_input = input('1 - Player\n2 - Creator\n')
+	while user_mode_input not in ['1', '2']:
+		user_mode_input = input('1 - Player\n2 - Creator\n')
 
-	login(my_sock, user_mode)
+	login(my_sock, user_mode_input)
 
-	if user_mode == '1':
+	if user_mode_input == '1':
 		user_game(my_sock)
 	else:
 		creator(my_sock)
-
-	pass
 
 
 if __name__ == '__main__':

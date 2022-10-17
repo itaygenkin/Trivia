@@ -145,3 +145,11 @@ def parse_notation(sentence):
 	sentence = sentence.replace('&#034;', '\"')
 	sentence = sentence.replace('&quot;', '\"')
 	return sentence
+
+
+def convert_user_mode(mode):
+	if mode == '2':
+		return True
+	elif mode == '1':
+		return False
+	return None

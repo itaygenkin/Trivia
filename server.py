@@ -171,18 +171,23 @@ def handle_login_message(conn, data):
 	global logged_users
 
 	try:
-		[user, password] = chatlib.split_data(data, 1)
-		if user in logged_users.values():
-			send_error(conn, f'{user} is already logged in')
-			# send_error(conn, f'{logged_users[conn]} is already logged in')
+		[user, password, mode] = chatlib.split_data(data, 2)
+		user_mode = chatlib.convert_user_mode(mode)
+
+		if user not in users.keys() or users[user]["password"] != password:
+			send_error(conn, "Incorrect username or password")
 			return False
-		elif user in users.keys() and (users[user])["password"] == password:
+		elif user_mode and not users[user]["isCreator"]:
+			send_error(conn, f"{user} is not permitted to log in to creator mode")
+			return False
+		elif user in logged_users.values():
+			send_error(conn, f'{user} is already logged in')
+			return False
+		else:
 			logged_users[conn.__str__()] = user
 			build_and_send_message(conn, chatlib.PROTOCOL_SERVER["login_ok_msg"], "")
 			return True
-		else:
-			send_error(conn, "Incorrect username or password")
-			return False
+
 	except AttributeError as e:
 		send_error(conn, "Incorrect username or password")
 		return False
