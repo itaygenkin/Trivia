@@ -10,9 +10,9 @@ import chatlib
 import random
 
 # GLOBALS
-users = {"itay": {"password": "a123", "score": 0, "questions_asked": []},
-		 "oscar": {"password": "oscar", "score": 1000, "questions_asked": []},
-		 "master": {"password": "master"}}
+users = {"itay": {"password": "a123", "score": 0, "questions_asked": [], "isCreator": False},
+		 "oscar": {"password": "oscar", "score": 1000, "questions_asked": [], "isCreator": False},
+		 "master": {"password": "master", "isCreator": True}}
 questions = {
 	chatlib.generate_question_number().__next__(): {"question": "How much is 2+2", "answers": ["1", "2", "3", "4"], "correct": 4},
 	chatlib.generate_question_number().__next__(): {"question": "What is the capital of France?", "answers": ["Lion", "Marseille", "Paris", "Montpelier"],

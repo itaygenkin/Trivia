@@ -108,8 +108,7 @@ def login(conn, user_mode):
 		username = input("Please enter username: \n")
 		password = input("Please enter password: \n")
 		data = [username, password]
-		build_and_send_message(conn, chatlib.PROTOCOL_CLIENT["login_msg"], '#'.join(data))
-		r = recv_message_and_parse(conn)
+		r = build_send_recv_parse(conn, chatlib.PROTOCOL_CLIENT["login_msg"], '#'.join(data))
 		if r[0] is None or r[0] == "ERROR":
 			print("Login failed")
 			print(r[1])
