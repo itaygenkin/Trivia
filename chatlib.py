@@ -153,3 +153,11 @@ def convert_user_mode(mode):
 	elif mode == '1':
 		return False
 	return None
+
+
+def input_and_validate(input_choices, menu):
+	user_input = input(menu)
+	while user_input not in input_choices:
+		print("Invalid choice")
+		user_input = input(menu)
+	return user_input

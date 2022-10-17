@@ -12,7 +12,7 @@ import random
 # GLOBALS
 users = {"itay": {"password": "a123", "score": 0, "questions_asked": [], "isCreator": False},
 		 "oscar": {"password": "oscar", "score": 1000, "questions_asked": [], "isCreator": False},
-		 "master": {"password": "master", "isCreator": True}}
+		 "master": {"password": "master", "score": 0, "questions_asked": [], "isCreator": True}}
 questions = {
 	chatlib.generate_question_number().__next__(): {"question": "How much is 2+2", "answers": ["1", "2", "3", "4"], "correct": 4},
 	chatlib.generate_question_number().__next__(): {"question": "What is the capital of France?", "answers": ["Lion", "Marseille", "Paris", "Montpelier"],
@@ -127,7 +127,6 @@ def send_error(conn, error_msg):
 
 def handle_getscore_message(conn, username):
 	global users
-	# Implement this in later chapters
 	score = (users[username])["score"]
 	build_and_send_message(conn, chatlib.PROTOCOL_SERVER["score"], str(score))
 
@@ -149,7 +148,7 @@ def join_list_to_str(my_list):
 
 def handle_logout_message(conn):
 	"""
-	Closes the given socket (in laster chapters, also remove user from logged_users dictionary)
+	Closes the given socket and remove the user from the logged users
 	Receives: socket
 	Returns: None
 	"""
@@ -255,30 +254,31 @@ def handle_client_message(conn, cmd, data):
 	if conn.__str__() not in logged_users.keys():
 		if cmd == "LOGIN":
 			return handle_login_message(conn, data)
-	elif cmd == "LOGOUT":
-		handle_logout_message(conn)
-		return True
-	elif cmd == "GET_QUESTION":
-		handle_question_message(conn)
-		return True
-	elif cmd == "SEND_ANSWER":
-		handle_answer_message(conn, logged_users[conn.__str__()], data)
-		return True
-	elif cmd == "MY_SCORE":
-		handle_getscore_message(conn, logged_users[conn.__str__()])
-		return True
-	elif cmd == "HIGHSCORE":
-		handle_highscore_message(conn)
-		return True
-	elif cmd == "LOGGED":
-		handle_logged_message(conn)
-		return True
-	elif cmd == "ADD_QUESTION":
-		handle_add_question(conn, data)
-		return True
-	else:
-		send_error(conn, "Error")
-		return False
+	match cmd:
+		case "LOGOUT":
+			handle_logout_message(conn)
+			return True
+		case "GET_QUESTION":
+			handle_question_message(conn)
+			return True
+		case "SEND_ANSWER":
+			handle_answer_message(conn, logged_users[conn.__str__()], data)
+			return True
+		case "MY_SCORE":
+			handle_getscore_message(conn, logged_users[conn.__str__()])
+			return True
+		case "HIGHSCORE":
+			handle_highscore_message(conn)
+			return True
+		case "LOGGED":
+			handle_logged_message(conn)
+			return True
+		case "ADD_QUESTION":
+			handle_add_question(conn, data)
+			return True
+		case _:
+			send_error(conn, "Error")
+			return False
 
 
 def main():
