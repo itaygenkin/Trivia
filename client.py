@@ -27,7 +27,6 @@ def recv_message_and_parse(conn):
 	Returns: cmd (str) and data (str) of the received message. 
 	If error occurred, will return None, None
 	"""
-	# TODO: debug
 	full_msg = conn.recv(1024).decode()
 	return chatlib.parse_message(full_msg)
 
@@ -59,7 +58,8 @@ def play_question(conn):
 			question_number = question_data[0]
 			question_data.remove(question_number)
 		except:
-			print(data)
+			print('exception in play_question', data)
+			return
 		question_data = [f'\n{x} - {question_data[x]}'for x in range(len(question_data))]
 		print(''.join(question_data)[5:])
 	ans = input("Answer: ")
@@ -68,15 +68,16 @@ def play_question(conn):
 	while ans not in ['1', '2', '3', '4']:
 		print("Invalid answer")
 		ans = input("Answer: ")
-	# TODO: relate to the case which @question_number is not initialize
+
 	(cmd, data) = build_send_recv_parse(conn, chatlib.PROTOCOL_CLIENT["send_ans"], question_number + '#' + ans)
+
 	if cmd is None:
 		print("ERROR")
 		return
 	elif cmd == "CORRECT_ANSWER":
 		print("Correct Answer")
 	else:
-		print("--> ", data)  # TODO: reformat
+		print("Wrong answer :( ", data)
 
 
 def get_logged_user(conn):

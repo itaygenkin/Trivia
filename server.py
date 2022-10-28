@@ -206,8 +206,14 @@ def handle_logged_message(conn):
 	build_and_send_message(conn, chatlib.PROTOCOL_SERVER["logged_msg"], ','.join(logged_users.values()))
 
 
-def create_random_question(user):
+def choose_random_question(user):
+	"""
+	randomly choose a question which @user hasn't been asked
+	:param user: the user who asked a question
+	:return: a question number and the question data
+	"""
 	global questions, users
+	# check if all questions have been asked
 	if len(users[user]['questions_asked']) == len(questions):
 		return None, None
 	question_data = random.choice(list(questions.items()))
@@ -226,12 +232,13 @@ def create_random_question(user):
 def handle_question_message(conn):
 	global users, logged_users
 	user = logged_users[conn.__str__()]
-	q_number, question = create_random_question(user)
-	if q_number is None:
+	question_number, question = choose_random_question(user)
+	if question_number is None:
 		send_error(conn, "No more questions")
 		return
-	users[user]['questions_asked'].append(q_number)
+	users[user]['questions_asked'].append(question_number)
 	build_and_send_message(conn, chatlib.PROTOCOL_SERVER['question'], question)
+	print(f'{user} questions asked = {users[user]["questions_asked"]}')
 
 
 def handle_answer_message(conn, user, ans):
@@ -240,7 +247,7 @@ def handle_answer_message(conn, user, ans):
 	correct_answer = questions[int(ans_list[0])]['correct']
 	if correct_answer == int(ans_list[1]):
 		users[user]['score'] += 5
-		build_and_send_message(conn, chatlib.PROTOCOL_SERVER['correct'], )
+		build_and_send_message(conn, chatlib.PROTOCOL_SERVER['correct'])
 	else:
 		build_and_send_message(conn, chatlib.PROTOCOL_SERVER['wrong'])
 
