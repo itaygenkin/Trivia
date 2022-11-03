@@ -1,6 +1,6 @@
 class Player:
     """
-    This class will replace user object
+    This class is intended to replace user object
     """
     def __init__(self, username, password, points=0):
         self._username = username

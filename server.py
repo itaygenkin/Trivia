@@ -5,7 +5,6 @@ import select
 import socket
 from operator import itemgetter
 import requests
-import queue
 
 import chatlib
 import random
@@ -55,8 +54,9 @@ def recv_message_and_parse(conn):
 		cmd, data = chatlib.parse_message(full_msg)
 		print("[CLIENT] ", full_msg)  # Debug print
 		return cmd, data
-	except:
+	except Exception as e:
 		print('some error')
+		print(e)
 		return None, None
 
 
@@ -189,8 +189,7 @@ def handle_login_message(conn, data):
 			return False
 		else:
 			logged_users[conn.__str__()] = user
-			messages_to_send.append((conn, conn, chatlib.PROTOCOL_SERVER["login_ok_msg"], ""))
-			# build_and_send_message(conn, chatlib.PROTOCOL_SERVER["login_ok_msg"], "")
+			build_and_send_message(conn, chatlib.PROTOCOL_SERVER["login_ok_msg"], "")
 			return True
 
 	except AttributeError as e:
@@ -236,11 +235,8 @@ def handle_question_message(conn):
 		send_error(conn, "No more questions")
 		return
 
-	print('---')
 	users[user]['questions_asked'].append(question_number)
-	print('----')
 	build_and_send_message(conn, chatlib.PROTOCOL_SERVER['question'], question)
-	print(f'[DEBUG PRINT] {user} questions asked = {users[user]["questions_asked"]}')
 
 
 def handle_answer_message(conn, user, ans):
@@ -269,12 +265,11 @@ def handle_client_message(conn, cmd, data):
 	Returns: None
 	"""
 	global logged_users
-	# if conn.__str__() not in logged_users.keys():
 	if cmd == "LOGIN":
 		return handle_login_message(conn, data)
 
 	match cmd:
-		case "LOGOUT":
+		case "LOGOUT":  # TODO: change to the new format
 			handle_logout_message(conn)
 			return True
 		case "GET_QUESTION":
@@ -313,6 +308,21 @@ def main():
 	while True:  # TODO: fix bug which call every event handler twice
 		ready_to_read, ready_to_write, in_error = select.select([server_socket] + client_sockets, client_sockets, [])
 
+		# sending every message to its recipient
+		for message in messages_to_send:
+			curr_sock, data_to_send = message
+			if curr_sock in ready_to_write:
+				try:
+					curr_sock.send(data_to_send.encode())
+					print("[SERVER] ", data_to_send)  # Debug print
+				except ConnectionAbortedError as cae:
+					print(logged_users[curr_sock.__str__()], "suddenly left the game")
+					client_sockets.remove(curr_sock)
+					logged_users.pop(curr_sock.__str__())
+					curr_sock.close()
+				finally:
+					messages_to_send.remove(message)
+
 		# reading the messages that every socket sent to the server
 		for curr_sock in ready_to_read:
 			# first time connecting
@@ -322,8 +332,10 @@ def main():
 				client_sockets.append(client_socket)
 				try:
 					cmd, data = recv_message_and_parse(client_socket)
-					while not handle_client_message(client_socket, cmd, data):
-						cmd, data = recv_message_and_parse(client_socket)
+					handle_client_message(client_socket, cmd, data)
+					# ready_to_write.append(curr_sock)
+					# while not handle_client_message(client_socket, cmd, data):  ###
+					# 	cmd, data = recv_message_and_parse(client_socket)
 				except Exception as e:
 					print("Unappropriated log out occurred")
 					try:
@@ -341,21 +353,6 @@ def main():
 					client_sockets.remove(curr_sock)
 					logged_users.pop(curr_sock.__str__())
 					curr_sock.close()
-
-		# sending every message to its recipient
-		for message in messages_to_send:
-			curr_sock, data_to_send = message
-			if curr_sock in ready_to_write:
-				try:
-					curr_sock.send(data_to_send.encode())
-					print("[SERVER] ", data_to_send)  # Debug print
-				except ConnectionAbortedError as cae:
-					print(logged_users[curr_sock.__str__()], "suddenly left the game")
-					client_sockets.remove(curr_sock)
-					logged_users.pop(curr_sock.__str__())
-					curr_sock.close()
-				finally:
-					messages_to_send.remove(message)
 
 
 if __name__ == '__main__':
