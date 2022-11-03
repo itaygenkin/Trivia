@@ -62,6 +62,7 @@ def play_question(conn):
 			return
 		question_data = [f'\n{x} - {question_data[x]}'for x in range(len(question_data))]
 		print(''.join(question_data)[5:])
+
 	ans = input("Answer: ")
 
 	# check answer validity
@@ -80,7 +81,7 @@ def play_question(conn):
 		print("Wrong answer :( ", data)
 
 
-def get_logged_user(conn):
+def get_logged_in_user(conn):
 	(cmd, data) = build_send_recv_parse(conn, chatlib.PROTOCOL_CLIENT["logged_msg"])
 	if cmd is None:
 		print("ERROR")
@@ -126,8 +127,8 @@ def logout(conn):
 
 
 def player_game(my_sock):
-	player_menu = "1 - Get question\n2 - Get score\n3 - Get high score\n4 - Get logged in\n5 - Log out\n"
-	command = chatlib.input_and_validate(['1', '2', '3', '4', '5'], player_menu)
+	player_menu = "1 - Get question\n2 - Get score\n3 - Get high score\n4 - Get logged in users\n5 - Log out\n"
+	command = chatlib.get_input_and_validate(['1', '2', '3', '4', '5'], player_menu)
 
 	while True:
 		cmd = chatlib.SEMI_PROTOCOL_CLIENT[command]
@@ -142,11 +143,11 @@ def player_game(my_sock):
 			case '3':
 				print(get_highscore(my_sock))
 			case '4':
-				get_logged_user(my_sock)
+				get_logged_in_user(my_sock)
 			case '5':
 				break
 
-		command = chatlib.input_and_validate(['1', '2', '3', '4', '5'], player_menu)
+		command = chatlib.get_input_and_validate(['1', '2', '3', '4', '5'], player_menu)
 
 	logout(my_sock)
 	print("Logout success")
@@ -171,15 +172,18 @@ def add_question(conn):  # TODO: validate input
 
 
 def creator(my_sock):
-	creator_menu = '1 - Add question\n2 - Log out\n'
-	command = chatlib.input_and_validate(['1', '2'], creator_menu)
+	creator_menu = '1 - Add question\n2 - Get logged in users\n3 - Log out\n'
+	command = chatlib.get_input_and_validate(['1', '2', '3'], creator_menu)
 
 	while True:
-		if command == '1':
-			add_question(my_sock)
-		elif command == '2':
-			break
-		command = chatlib.input_and_validate(['1', '2'], creator_menu)
+		match command:
+			case '1':
+				add_question(my_sock)
+			case '2':
+				get_logged_in_user(my_sock)
+			case '3':
+				break
+		command = chatlib.get_input_and_validate(['1', '2', '3'], creator_menu)
 
 	logout(my_sock)
 	print("Logout success")
@@ -189,7 +193,7 @@ def main():
 	my_sock = connect()
 
 	first_menu = '1 - Player\n2 - Creator\n'
-	user_mode_input = chatlib.input_and_validate(['1', '2'], first_menu)
+	user_mode_input = chatlib.get_input_and_validate(['1', '2'], first_menu)
 
 	login(my_sock, user_mode_input)
 

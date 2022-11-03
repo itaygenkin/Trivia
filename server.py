@@ -5,6 +5,7 @@ import select
 import socket
 from operator import itemgetter
 import requests
+import queue
 
 import chatlib
 import random
@@ -20,6 +21,7 @@ questions = {
 }
 logged_users = {}  # a dictionary of client hostnames to usernames
 client_sockets = []  # a list of client sockets
+messages_to_send = []  # a list of messages which the server might send to clients
 
 ERROR_MSG = "Error! "
 SERVER_PORT = 5678
@@ -31,19 +33,13 @@ SERVER_IP = "127.0.0.1"
 def build_and_send_message(conn, code, data=""):
 	"""
 	Builds a new message using chatlib, wanted code and message.
-	Prints debug info, then sends it to the given socket.
+	Add the socket and the message to the list 'message_to_send'
 	Parameters: conn (socket object), code (str), data (str)
 	Returns: Nothing
 	"""
-	global logged_users
+	global logged_users, messages_to_send
 	msg = chatlib.build_message(code, data)
-	try:
-		conn.send(msg.encode())
-		print("[SERVER] ", msg)  # Debug print
-	except ConnectionAbortedError as cae:
-		# print(logged_users[conn.__str__()], "suddenly left the game")
-		# handle_logout_message(conn)
-		raise cae
+	messages_to_send.append((conn, msg))
 
 
 def recv_message_and_parse(conn):
@@ -193,7 +189,8 @@ def handle_login_message(conn, data):
 			return False
 		else:
 			logged_users[conn.__str__()] = user
-			build_and_send_message(conn, chatlib.PROTOCOL_SERVER["login_ok_msg"], "")
+			messages_to_send.append((conn, conn, chatlib.PROTOCOL_SERVER["login_ok_msg"], ""))
+			# build_and_send_message(conn, chatlib.PROTOCOL_SERVER["login_ok_msg"], "")
 			return True
 
 	except AttributeError as e:
@@ -206,11 +203,12 @@ def handle_logged_message(conn):
 	build_and_send_message(conn, chatlib.PROTOCOL_SERVER["logged_msg"], ','.join(logged_users.values()))
 
 
-def choose_random_question(user):
+def create_random_question(user):
 	"""
 	randomly choose a question which @user hasn't been asked
 	:param user: the user who asked a question
 	:return: a question number and the question data
+	:rtype: int, str
 	"""
 	global questions, users
 	# check if all questions have been asked
@@ -232,13 +230,17 @@ def choose_random_question(user):
 def handle_question_message(conn):
 	global users, logged_users
 	user = logged_users[conn.__str__()]
-	question_number, question = choose_random_question(user)
+
+	question_number, question = create_random_question(user)
 	if question_number is None:
 		send_error(conn, "No more questions")
 		return
+
+	print('---')
 	users[user]['questions_asked'].append(question_number)
+	print('----')
 	build_and_send_message(conn, chatlib.PROTOCOL_SERVER['question'], question)
-	print(f'{user} questions asked = {users[user]["questions_asked"]}')
+	print(f'[DEBUG PRINT] {user} questions asked = {users[user]["questions_asked"]}')
 
 
 def handle_answer_message(conn, user, ans):
@@ -302,16 +304,17 @@ def handle_client_message(conn, cmd, data):
 
 
 def main():
-	global users, questions, client_sockets
+	global users, questions, client_sockets, messages_to_send
 	load_questions_from_web()
 	print("Welcome to Trivia Server!\n")
 
 	server_socket = setup_socket()
 
-	while True:
+	while True:  # TODO: fix bug which call every event handler twice
 		ready_to_read, ready_to_write, in_error = select.select([server_socket] + client_sockets, client_sockets, [])
-		for curr_sock in ready_to_read:
 
+		# reading the messages that every socket sent to the server
+		for curr_sock in ready_to_read:
 			# first time connecting
 			if curr_sock is server_socket:
 				(client_socket, client_address) = curr_sock.accept()
@@ -325,19 +328,34 @@ def main():
 					print("Unappropriated log out occurred")
 					try:
 						client_sockets.remove(client_socket)
+						logged_users.pop(curr_sock.__str__())  ###
 						client_socket.close()
 					except Exception as e:
 						print(e)
 			else:
-				# (client_socket, client_address) = server_socket.accept()
 				try:
 					cmd, data = recv_message_and_parse(curr_sock)
 					handle_client_message(curr_sock, cmd, data)
 				except ConnectionAbortedError as cae:
 					print(logged_users[curr_sock.__str__()], "suddenly left the game")
-					logged_users.pop(curr_sock.__str__())
 					client_sockets.remove(curr_sock)
+					logged_users.pop(curr_sock.__str__())
 					curr_sock.close()
+
+		# sending every message to its recipient
+		for message in messages_to_send:
+			curr_sock, data_to_send = message
+			if curr_sock in ready_to_write:
+				try:
+					curr_sock.send(data_to_send.encode())
+					print("[SERVER] ", data_to_send)  # Debug print
+				except ConnectionAbortedError as cae:
+					print(logged_users[curr_sock.__str__()], "suddenly left the game")
+					client_sockets.remove(curr_sock)
+					logged_users.pop(curr_sock.__str__())
+					curr_sock.close()
+				finally:
+					messages_to_send.remove(message)
 
 
 if __name__ == '__main__':
