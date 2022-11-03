@@ -269,7 +269,7 @@ def handle_client_message(conn, cmd, data):
 		return handle_login_message(conn, data)
 
 	match cmd:
-		case "LOGOUT":  # TODO: change to the new format
+		case "LOGOUT":
 			handle_logout_message(conn)
 			return True
 		case "GET_QUESTION":

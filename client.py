@@ -43,7 +43,6 @@ def get_score(conn):
 
 def get_highscore(conn):
 	(cmd, data) = build_send_recv_parse(conn, chatlib.PROTOCOL_CLIENT["high"], "")
-	time.sleep(2.5)
 	return data
 
 
@@ -142,6 +141,7 @@ def player_game(my_sock):
 				time.sleep(2.5)
 			case '3':
 				print(get_highscore(my_sock))
+				time.sleep(2.5)
 			case '4':
 				get_logged_in_user(my_sock)
 			case '5':
