@@ -36,7 +36,7 @@ def build_and_send_message(conn, code, data=""):
 	Parameters: conn (socket object), code (str), data (str)
 	Returns: Nothing
 	"""
-	global logged_users, messages_to_send
+	global messages_to_send
 	msg = chatlib.build_message(code, data)
 	messages_to_send.append((conn, msg))
 
@@ -316,9 +316,9 @@ def main():
 					curr_sock.send(data_to_send.encode())
 					print("[SERVER] ", data_to_send)  # Debug print
 				except ConnectionAbortedError as cae:
-					print(logged_users[curr_sock.__str__()], "suddenly left the game")
+					if logged_users.__contains__(curr_sock.__str__()):
+						logged_users.pop(curr_sock.__str__())
 					client_sockets.remove(curr_sock)
-					logged_users.pop(curr_sock.__str__())
 					curr_sock.close()
 				finally:
 					messages_to_send.remove(message)
@@ -333,9 +333,6 @@ def main():
 				try:
 					cmd, data = recv_message_and_parse(client_socket)
 					handle_client_message(client_socket, cmd, data)
-					# ready_to_write.append(curr_sock)
-					# while not handle_client_message(client_socket, cmd, data):  ###
-					# 	cmd, data = recv_message_and_parse(client_socket)
 				except Exception as e:
 					print("Unappropriated log out occurred")
 					try:
