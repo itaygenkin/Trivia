@@ -316,8 +316,10 @@ def main():
 					curr_sock.send(data_to_send.encode())
 					print("[SERVER] ", data_to_send)  # Debug print
 				except ConnectionAbortedError as cae:
+					# check if the client has already logged in yet
 					if logged_users.__contains__(curr_sock.__str__()):
 						logged_users.pop(curr_sock.__str__())
+
 					client_sockets.remove(curr_sock)
 					curr_sock.close()
 				finally:
@@ -337,7 +339,8 @@ def main():
 					print("Unappropriated log out occurred")
 					try:
 						client_sockets.remove(client_socket)
-						logged_users.pop(curr_sock.__str__())  ###
+						if logged_users.__contains__(curr_sock.__str__()):
+							logged_users.pop(curr_sock.__str__())
 						client_socket.close()
 					except Exception as e:
 						print(e)
