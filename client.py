@@ -56,8 +56,9 @@ def play_question(conn):
 		try:
 			question_number = question_data[0]
 			question_data.remove(question_number)
-		except:
+		except Exception as e:
 			print('exception in play_question', data)
+			print(e)
 			return
 		question_data = [f'\n{x} - {question_data[x]}'for x in range(len(question_data))]
 		print(''.join(question_data)[5:])
@@ -110,6 +111,7 @@ def login(conn, user_mode):
 		username = input("Please enter username: \n")
 		password = input("Please enter password: \n")
 		data = [username, password, user_mode]
+		print('logging...')
 		r = build_send_recv_parse(conn, chatlib.PROTOCOL_CLIENT["login_msg"], '#'.join(data))
 		if r[0] is None or r[0] == "ERROR":
 			print("Login failed")
@@ -153,7 +155,7 @@ def player_game(my_sock):
 	print("Logout success")
 
 
-def add_question(conn):  # TODO: validate input
+def add_question(conn):
 	"""
 	add question to database, only creator can add questions
 	:param conn: socket

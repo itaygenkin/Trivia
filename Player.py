@@ -6,7 +6,7 @@ class Player:
         self._username = username
         self._password = password
         self._points = points
-        self._isCreator = False
+        self._is_creator = False
 
     def get_username(self):
         return self._username
@@ -18,7 +18,7 @@ class Player:
         return self._points
 
     def make_up_a_creator(self, player):
-        if self._isCreator:
-            player._isCreator = True
+        if self._is_creator:
+            player._is_creator = True
         else:
             raise PermissionError

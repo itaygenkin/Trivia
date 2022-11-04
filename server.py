@@ -5,18 +5,21 @@ import select
 import socket
 from operator import itemgetter
 import requests
+import sys
+import json
 
 import chatlib
 import random
 
 # GLOBALS
-users = {"itay": {"password": "a123", "score": 0, "questions_asked": [], "isCreator": False},
-		 "oscar": {"password": "oscar", "score": 1000, "questions_asked": [], "isCreator": False},
-		 "master": {"password": "master", "score": 0, "questions_asked": [], "isCreator": True}}
+# users = {"itay": {"password": "a123", "score": 0, "questions_asked": [], "is_creator": False},
+# 		 "oscar": {"password": "oscar", "score": 1000, "questions_asked": [], "is_creator": False},
+# 		 "master": {"password": "master", "score": 0, "questions_asked": [], "is_creator": True}}
+users = {}
 questions = {
 	chatlib.generate_question_number().__next__(): {"question": "How much is 2+2", "answers": ["1", "2", "3", "4"], "correct": 4},
-	chatlib.generate_question_number().__next__(): {"question": "What is the capital of France?", "answers": ["Lion", "Marseille", "Paris", "Montpelier"],
-		   "correct": 3}
+	chatlib.generate_question_number().__next__(): {"question": "What is the capital of France?", "answers": ["Lion",
+																	"Marseille", "Paris", "Montpelier"], "correct": 3}
 }
 logged_users = {}  # a dictionary of client hostnames to usernames
 client_sockets = []  # a list of client sockets
@@ -55,7 +58,6 @@ def recv_message_and_parse(conn):
 		print("[CLIENT] ", full_msg)  # Debug print
 		return cmd, data
 	except Exception as e:
-		print('some error')
 		print(e)
 		return None, None
 
@@ -86,18 +88,30 @@ def load_questions_from_web():
 		questions[chatlib.generate_question_number().__next__()] = {"question": question, "answers": answers, "correct": rand}
 
 
-def load_user_database():  # TODO: implement
+def load_user_database():
 	"""
-	Loads users list from file	## FILE SUPPORT TO BE ADDED LATER
+	Loads users list from file
 	Recieves: -
 	Returns: user dictionary
 	"""
-	users = {
-		"test": {"password": "test", "score": 0, "questions_asked": []},
-		"yossi": {"password": "123", "score": 50, "questions_asked": []},
-		"master": {"password": "master", "score": 200, "questions_asked": []}
-	}
+	global users
+	with open(sys.argv[1]) as json_file:
+		data = json.load(json_file)
+		for o in data:
+			o_dict = {'password': data[o]['password'],
+					   'score': data[o]['score'],
+					   'questions_asked': data[o]['questions_asked'],
+					   'is_creator': data[o]['is_creator']}
+			users[o] = o_dict
 	return users
+
+
+def update_users_database():
+	global users
+	file = open(sys.argv[1], 'w')
+	json.dump(users, file, indent=4)
+	file.flush()
+	file.close()
 
 
 # SOCKET CREATOR
@@ -123,8 +137,8 @@ def send_error(conn, error_msg):
 	"""
 	try:
 		build_and_send_message(conn, "ERROR", error_msg)
-	except ConnectionAbortedError as cae:
-		raise cae
+	except ConnectionAbortedError or ConnectionResetError as e:
+		raise e
 
 
 ##### MESSAGE HANDLING
@@ -294,13 +308,14 @@ def handle_client_message(conn, cmd, data):
 			try:
 				send_error(conn, "Error")
 				return False
-			except ConnectionAbortedError as cae:
-				raise cae
+			except ConnectionAbortedError or ConnectionResetError as e:
+				raise e
 
 
 def main():
 	global users, questions, client_sockets, messages_to_send
 	load_questions_from_web()
+	load_user_database()
 	print("Welcome to Trivia Server!\n")
 
 	server_socket = setup_socket()
@@ -315,7 +330,7 @@ def main():
 				try:
 					curr_sock.send(data_to_send.encode())
 					print("[SERVER] ", data_to_send)  # Debug print
-				except ConnectionAbortedError as cae:
+				except ConnectionAbortedError or ConnectionResetError as e:
 					# check if the client has already logged in yet
 					if logged_users.__contains__(curr_sock.__str__()):
 						logged_users.pop(curr_sock.__str__())
@@ -348,11 +363,13 @@ def main():
 				try:
 					cmd, data = recv_message_and_parse(curr_sock)
 					handle_client_message(curr_sock, cmd, data)
-				except ConnectionAbortedError as cae:
+				except ConnectionAbortedError or ConnectionResetError as e:
 					print(logged_users[curr_sock.__str__()], "suddenly left the game")
 					client_sockets.remove(curr_sock)
 					logged_users.pop(curr_sock.__str__())
 					curr_sock.close()
+
+	update_users_database()
 
 
 if __name__ == '__main__':
